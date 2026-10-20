@@ -1,0 +1,122 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Productos</ion-title>
+  </ion-toolbar>
+
+  <!-- Filtros: buscador por nombre + categorías -->
+  <ion-toolbar color="primary" class="filtros">
+    <ion-searchbar placeholder="Buscar producto" [debounce]="400" (ionInput)="onSearch($event)"></ion-searchbar>
+  </ion-toolbar>
+  <ion-toolbar>
+    <ion-segment [scrollable]="true" [value]="categoryFilter" (ionChange)="onCategoryChange($event)">
+      <ion-segment-button [value]="0"><ion-label>Todas</ion-label></ion-segment-button>
+      @for (c of categories(); track c.id) {
+        <ion-segment-button [value]="c.id"><ion-label>{{ c.name }}</ion-label></ion-segment-button>
+      }
+    </ion-segment>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <div class="contenedor">
+
+    @if (loading() && !products().length) {
+      <div class="centro"><ion-spinner></ion-spinner></div>
+    } @else if (loadFailed()) {
+      <!-- La lista no se pudo cargar (sin conexión o error del servidor) -->
+      <div class="centro vacio">
+        <ion-icon name="cloud-offline-outline"></ion-icon>
+        <p>No se pudo cargar la lista de productos</p>
+        <ion-button fill="outline" (click)="loadProducts()">
+          <ion-icon slot="start" name="refresh"></ion-icon>
+          Reintentar
+        </ion-button>
+      </div>
+    } @else if (!products().length) {
+      <!-- Estado vacío -->
+      <div class="centro vacio">
+        <ion-icon name="cube-outline"></ion-icon>
+        <p>No se encontraron productos</p>
+      </div>
+    } @else if (products().length) {
+      <p class="resumen">{{ products().length }} producto(s)</p>
+
+      <!-- Lista: tocar un producto abre el formulario de edición -->
+      <ion-list [inset]="true">
+        @for (p of products(); track p.id) {
+          <ion-item [button]="true" [detail]="false" (click)="edit(p)">
+            <ion-label>
+              <h2>{{ p.name }}</h2>
+              <p>{{ categoryName(p.categoryId) }}</p>
+            </ion-label>
+            <div slot="end" class="precio">
+              <strong>{{ p.price | currency:'USD' }}</strong>
+              <ion-badge [color]="p.stock > 5 ? 'success' : 'warning'">Stock: {{ p.stock }}</ion-badge>
+            </div>
+          </ion-item>
+        }
+      </ion-list>
+    }
+  </div>
+
+  <!-- Botón flotante para crear -->
+  <ion-fab slot="fixed" vertical="bottom" horizontal="end">
+    <ion-fab-button (click)="openCreate()" aria-label="Nuevo producto">
+      <ion-icon name="add"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
+
+  <!-- Formulario en modal (crear / editar) -->
+  <ion-modal [isOpen]="formOpen()" (didDismiss)="closeForm()">
+    <ng-template>
+      <ion-header>
+        <ion-toolbar>
+          <ion-buttons slot="start">
+            <ion-button (click)="closeForm()" aria-label="Cerrar">
+              <ion-icon slot="icon-only" name="close"></ion-icon>
+            </ion-button>
+          </ion-buttons>
+          <ion-title>{{ editingId ? 'Editar producto' : 'Nuevo producto' }}</ion-title>
+          <ion-buttons slot="end">
+            <ion-button [strong]="true" (click)="save()">Guardar</ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+
+      <ion-content class="ion-padding">
+        <!-- Errores de validación (400) -->
+        @if (errorMessage()) {
+          <div class="alerta">
+            <ion-icon name="alert-circle-outline"></ion-icon>
+            <div>
+              <strong>{{ errorMessage() }}</strong>
+              @for (e of errors(); track e) { <p>{{ e }}</p> }
+            </div>
+          </div>
+        }
+
+        <ion-input label="Nombre" labelPlacement="floating" fill="outline" [(ngModel)]="form.name"></ion-input>
+        <div class="fila">
+          <ion-input label="Precio" labelPlacement="floating" fill="outline" type="number" [(ngModel)]="form.price"></ion-input>
+          <ion-input label="Stock" labelPlacement="floating" fill="outline" type="number" [(ngModel)]="form.stock"></ion-input>
+        </div>
+        <ion-select label="Categoría" labelPlacement="floating" fill="outline" interface="popover" [(ngModel)]="form.categoryId">
+          @for (c of categories(); track c.id) {
+            <ion-select-option [value]="c.id">{{ c.name }}</ion-select-option>
+          }
+        </ion-select>
+
+        @if (editingId) {
+          <ion-button expand="block" fill="outline" color="danger" class="eliminar" (click)="remove(form)">
+            <ion-icon slot="start" name="trash-outline"></ion-icon>
+            Eliminar producto
+          </ion-button>
+        }
+      </ion-content>
+    </ng-template>
+  </ion-modal>
+
+</ion-content>

@@ -1,0 +1,35 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-title>Inicio</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <h1 class="titulo">Bienvenido</h1>
+  <p class="subtitulo">Selecciona un módulo</p>
+
+  <!-- Menú de módulos: cada tarjeta es un link -->
+  <div class="menu">
+    <!-- Links que ya traería el proyecto (de ejemplo, deshabilitados) -->
+    <ion-card class="opcion" [button]="true" [disabled]="true">
+      <div class="contenido">
+        <ion-icon name="people-outline"></ion-icon>
+        <span>Clientes</span>
+      </div>
+    </ion-card>
+    <ion-card class="opcion" [button]="true" [disabled]="true">
+      <div class="contenido">
+        <ion-icon name="receipt-outline"></ion-icon>
+        <span>Facturación</span>
+      </div>
+    </ion-card>
+
+    <!-- 👇 Link agregado: abre la página products (ruta en app.routes.ts) -->
+    <ion-card class="opcion" [button]="true" routerLink="/products">
+      <div class="contenido">
+        <ion-icon name="cube-outline"></ion-icon>
+        <span>Productos</span>
+      </div>
+    </ion-card>
+  </div>
+</ion-content>

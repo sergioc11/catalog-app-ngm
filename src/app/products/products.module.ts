@@ -1,0 +1,14 @@
+import { NgModule } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { IonicModule } from '@ionic/angular/lazy';
+
+import { ProductsPageRoutingModule } from './products-routing.module';
+import { ProductsPage } from './products.page';
+
+// CommonModule: @if/@for, currency | FormsModule: [(ngModel)] | IonicModule: todos los <ion-...>
+@NgModule({
+  imports: [CommonModule, FormsModule, IonicModule, ProductsPageRoutingModule],
+  declarations: [ProductsPage],
+})
+export class ProductsPageModule {}

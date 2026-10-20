@@ -1,0 +1,7 @@
+{
+  "name": "appNgModules",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular"
+}
