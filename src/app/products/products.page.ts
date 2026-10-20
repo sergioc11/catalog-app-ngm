@@ -3,7 +3,6 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { AlertController, ToastController } from '@ionic/angular/lazy';
 import { ProductService } from '../services/product.service';
 import { CategoryService } from '../services/category.service';
-import { ApiResponse } from '../models/api-response.model';
 import { Category } from '../models/category.model';
 import { Product } from '../models/product.model';
 
@@ -23,9 +22,8 @@ export class ProductsPage implements OnInit {
   products = signal<Product[]>([]);
   categories = signal<Category[]>([]);
   loading = signal(false);
-  loadFailed = signal(false);          // true si la lista no se pudo cargar (muestra "Reintentar")
 
-  // Errores de validación (400) que se muestran dentro del formulario
+  // Mensaje de error de la API (message + errors). Los éxitos se confirman con un toast.
   errorMessage = signal('');
   errors = signal<string[]>([]);
 
@@ -41,7 +39,7 @@ export class ProductsPage implements OnInit {
   ngOnInit(): void {
     this.categoryService.getCategories().subscribe({
       next: (res) => this.categories.set(res.data),
-      error: () => this.categories.set([]),   // el interceptor ya muestra el aviso
+      error: (err) => this.showError(err),
     });
     this.loadProducts();
   }
@@ -52,12 +50,11 @@ export class ProductsPage implements OnInit {
     this.productService.getProducts(this.categoryFilter || null, this.nameFilter).subscribe({
       next: (res) => {
         this.products.set(res.data);
-        this.loadFailed.set(false);
+        this.clearError();
         this.loading.set(false);
       },
-      // Si la lista falla se muestra "Reintentar" (el interceptor ya avisó si fue 0 o 5xx)
-      error: () => {
-        this.loadFailed.set(true);
+      error: (err) => {
+        this.showError(err);
         this.loading.set(false);
       },
     });
@@ -99,7 +96,7 @@ export class ProductsPage implements OnInit {
     this.clearError();
   }
 
-  // Crea (POST → 201) o actualiza (PUT → 200)
+  // Crea (POST → 201) o actualiza (PUT → 200). Si la API responde 400 o 404, se muestra el error.
   save(): void {
     const request = this.editingId
       ? this.productService.updateProduct(this.editingId, this.form)
@@ -108,10 +105,10 @@ export class ProductsPage implements OnInit {
     request.subscribe({
       next: (res) => {
         this.formOpen.set(false);
-        this.showToast(res.message, 'success');
+        this.showToast(res.message);
         this.loadProducts();
       },
-      error: (err) => this.handleError(err),
+      error: (err) => this.showError(err),
     });
   }
 
@@ -132,31 +129,23 @@ export class ProductsPage implements OnInit {
     this.productService.deleteProduct(product.id!).subscribe({
       next: (res) => {
         this.formOpen.set(false);
-        this.showToast(res.message, 'success');
+        this.showToast(res.message);
         this.loadProducts();
       },
-      error: (err) => this.handleError(err),
+      error: (err) => this.showError(err),
     });
   }
 
-  // ---------- Manejo de errores por status ----------
-  // err.status = código HTTP. err.error = body con la respuesta estándar { message, errors }.
-  private handleError(err: HttpErrorResponse): void {
-    const body = err.error as ApiResponse<null> | null;
-
-    switch (err.status) {
-      case 400:   // Datos inválidos: se muestran en el formulario con el detalle de errors
-        this.errorMessage.set(body?.message ?? 'Los datos no son válidos');
-        this.errors.set(body?.errors ?? []);
-        break;
-      case 404:   // El producto ya no existe (ej: lo eliminó otro usuario): avisar y refrescar
-        this.formOpen.set(false);
-        this.showToast(body?.message ?? 'El producto ya no existe', 'warning');
-        this.loadProducts();
-        break;
-      default:    // 0 (sin conexión) y 5xx: ya los muestra httpErrorInterceptor
-        break;
+  // ---------- Mensajes ----------
+  // err.status = código HTTP (0 si no hubo respuesta). err.error = body estándar { message, errors }.
+  private showError(err: HttpErrorResponse): void {
+    if (err.status === 0) {
+      this.errorMessage.set('No se pudo conectar con la API');
+      this.errors.set([]);
+      return;
     }
+    this.errorMessage.set(err.error?.message ?? 'Error inesperado');
+    this.errors.set(err.error?.errors ?? []);
   }
 
   private clearError(): void {
@@ -164,10 +153,9 @@ export class ProductsPage implements OnInit {
     this.errors.set([]);
   }
 
-  private async showToast(message: string, color: 'success' | 'warning'): Promise<void> {
+  private async showToast(message: string): Promise<void> {
     const toast = await this.toastCtrl.create({
-      message, duration: 2500, color, position: 'top',
-      icon: color === 'success' ? 'checkmark-circle-outline' : 'alert-circle-outline',
+      message, duration: 2000, color: 'success', position: 'top', icon: 'checkmark-circle-outline',
     });
     await toast.present();
   }

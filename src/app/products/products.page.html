@@ -23,19 +23,20 @@
 <ion-content>
   <div class="contenedor">
 
+    <!-- Error de la API al cargar la lista (ej: sin conexión) -->
+    @if (errorMessage() && !formOpen()) {
+      <div class="alerta">
+        <ion-icon name="alert-circle-outline"></ion-icon>
+        <div>
+          <strong>{{ errorMessage() }}</strong>
+          @for (e of errors(); track e) { <p>{{ e }}</p> }
+        </div>
+      </div>
+    }
+
     @if (loading() && !products().length) {
       <div class="centro"><ion-spinner></ion-spinner></div>
-    } @else if (loadFailed()) {
-      <!-- La lista no se pudo cargar (sin conexión o error del servidor) -->
-      <div class="centro vacio">
-        <ion-icon name="cloud-offline-outline"></ion-icon>
-        <p>No se pudo cargar la lista de productos</p>
-        <ion-button fill="outline" (click)="loadProducts()">
-          <ion-icon slot="start" name="refresh"></ion-icon>
-          Reintentar
-        </ion-button>
-      </div>
-    } @else if (!products().length) {
+    } @else if (!products().length && !errorMessage()) {
       <!-- Estado vacío -->
       <div class="centro vacio">
         <ion-icon name="cube-outline"></ion-icon>
